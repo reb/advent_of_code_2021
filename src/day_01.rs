@@ -68,6 +68,27 @@
 const INPUT: &str = include_str!("../input/day_01");
 
 pub fn run() {
-    println!("Not implemented yet");
-    unimplemented!();
+    let depths = load_depths(INPUT);
+
+}
+
+fn load_depths(input: &str) -> Vec<u32> {
+    input
+        .lines()
+        .map(|line| line.parse())
+        .filter_map(Result::ok)
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_load_depths() {
+        let input = "199\n200\n208\n";
+
+        let expected = vec![199, 200, 208];
+        assert_eq!(load_depths(input), expected);
+    }
 }
