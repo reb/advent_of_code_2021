@@ -64,12 +64,30 @@
 ///
 /// How many measurements are larger than the previous measurement?
 
-
 const INPUT: &str = include_str!("../input/day_01");
 
 pub fn run() {
     let depths = load_depths(INPUT);
+    let increases = count_increases(&depths);
+    println!(
+        "There are {} measurements larger than the previous measurement",
+        increases
+    );
+}
 
+fn count_increases(depths: &Vec<u32>) -> u32 {
+    let (total_increases, _) =
+        depths
+            .iter()
+            .fold((0, None), |(mut increases, last_depth), current_depth| {
+                if let Some(depth) = last_depth {
+                    if depth < current_depth {
+                        increases += 1
+                    }
+                }
+                (increases, Some(current_depth))
+            });
+    total_increases
 }
 
 fn load_depths(input: &str) -> Vec<u32> {
@@ -90,5 +108,12 @@ mod tests {
 
         let expected = vec![199, 200, 208];
         assert_eq!(load_depths(input), expected);
+    }
+
+    #[test]
+    fn test_count_increases() {
+        let depths = vec![199, 200, 208, 210, 200, 207, 240, 269, 260, 263];
+
+        assert_eq!(count_increases(&depths), 7);
     }
 }
