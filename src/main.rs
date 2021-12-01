@@ -41,4 +41,5 @@ macro_rules! modules {
 }
 
 modules![
+    day_01,
 ];
