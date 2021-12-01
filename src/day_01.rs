@@ -115,10 +115,17 @@ const INPUT: &str = include_str!("../input/day_01");
 
 pub fn run() {
     let depths = load_depths(INPUT);
+
     let increases = count_increases(&depths);
     println!(
         "There are {} measurements larger than the previous measurement",
         increases
+    );
+
+    let increases_in_window = count_increases_in_window(&depths);
+    println!(
+        "There are {} three-measurement sliding window sums larger than the previous sum",
+        increases_in_window
     );
 }
 
@@ -134,6 +141,23 @@ fn count_increases(depths: &Vec<u32>) -> u32 {
                 }
                 (increases, Some(current_depth))
             });
+    total_increases
+}
+
+fn count_increases_in_window(depths: &Vec<u32>) -> u32 {
+    let (total_increases, _) = depths.iter().fold(
+        (0, (None, None, None)),
+        |(mut increases, (last_depth_1, last_depth_2, last_depth_3)), current_depth| {
+            if let (Some(depth_1), Some(depth_2), Some(depth_3)) =
+                (last_depth_1, last_depth_2, last_depth_3)
+            {
+                if depth_1 + depth_2 + depth_3 < depth_2 + depth_3 + current_depth {
+                    increases += 1
+                }
+            }
+            (increases, (last_depth_2, last_depth_3, Some(current_depth)))
+        },
+    );
     total_increases
 }
 
@@ -162,5 +186,12 @@ mod tests {
         let depths = vec![199, 200, 208, 210, 200, 207, 240, 269, 260, 263];
 
         assert_eq!(count_increases(&depths), 7);
+    }
+
+    #[test]
+    fn test_count_increases_in_window() {
+        let depths = vec![199, 200, 208, 210, 200, 207, 240, 269, 260, 263];
+
+        assert_eq!(count_increases_in_window(&depths), 5);
     }
 }
