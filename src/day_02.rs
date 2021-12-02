@@ -105,28 +105,41 @@ enum Action {
 }
 
 fn follow_instructions(instructions: &Vec<Instruction>) -> (i32, i32) {
-    instructions
-        .iter()
-        .fold((0, 0), |(horizontal, depth), instruction| {
-            let (d_horizontal, d_depth) = instruction_delta(instruction);
-            (horizontal + d_horizontal, depth + d_depth)
-        })
+    let mut submarine = Submarine::new();
+    for instruction in instructions.iter() {
+        submarine.execute_instruction(instruction);
+    }
+    (submarine.horizontal, submarine.depth)
 }
 
-fn instruction_delta(instruction: &Instruction) -> (i32, i32) {
-    match instruction {
-        Instruction {
-            action: Action::Forward,
-            units,
-        } => (*units, 0),
-        Instruction {
-            action: Action::Down,
-            units,
-        } => (0, *units),
-        Instruction {
-            action: Action::Up,
-            units,
-        } => (0, -*units),
+struct Submarine {
+    horizontal: i32,
+    depth: i32,
+}
+
+impl Submarine {
+    fn new() -> Submarine {
+        Submarine {
+            horizontal: 0,
+            depth: 0,
+        }
+    }
+
+    fn execute_instruction(&mut self, instruction: &Instruction) {
+        match instruction {
+            Instruction {
+                action: Action::Forward,
+                units,
+            } => self.horizontal += units,
+            Instruction {
+                action: Action::Down,
+                units,
+            } => self.depth += units,
+            Instruction {
+                action: Action::Up,
+                units,
+            } => self.depth -= units,
+        }
     }
 }
 
