@@ -38,10 +38,84 @@
 /// Calculate the horizontal position and depth you would have after following
 /// the planned course. What do you get if you multiply your final horizontal
 /// position by your final depth?
+use regex::Regex;
 
 const INPUT: &str = include_str!("../input/day_02");
 
 pub fn run() {
-    println!("Not implemented yet");
-    unimplemented!();
+    let instructions = parse_instructions(INPUT);
+    println!("{:?}", instructions);
+}
+
+#[derive(Debug, PartialEq)]
+struct Instruction {
+    action: Action,
+    units: i32,
+}
+
+#[derive(Debug, PartialEq)]
+enum Action {
+    Forward,
+    Down,
+    Up,
+}
+
+fn parse_instructions(input: &str) -> Vec<Instruction> {
+    input.lines().filter_map(convert_to_instruction).collect()
+}
+
+fn convert_to_instruction(line: &str) -> Option<Instruction> {
+    lazy_static! {
+        static ref RE: Regex = Regex::new(r"(down|forward|up) ([0-9])").unwrap();
+    }
+    RE.captures(line).and_then(|groups| {
+        groups
+            .get(1)
+            .and_then(|a| convert_to_action(a.as_str()))
+            .and_then(|action| {
+                groups
+                    .get(2)
+                    .and_then(|u| u.as_str().parse().ok())
+                    .and_then(|units| Some(Instruction { action, units }))
+            })
+    })
+}
+
+fn convert_to_action(action: &str) -> Option<Action> {
+    match action {
+        "forward" => Some(Action::Forward),
+        "down" => Some(Action::Down),
+        "up" => Some(Action::Up),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_instruction() {
+        let input = "\
+            down 5\n\
+            forward 8\n\
+            up 3\n";
+
+        let expected = vec![
+            Instruction {
+                action: Action::Down,
+                units: 5,
+            },
+            Instruction {
+                action: Action::Forward,
+                units: 8,
+            },
+            Instruction {
+                action: Action::Up,
+                units: 3,
+            },
+        ];
+
+        assert_eq!(parse_instructions(input), expected);
+    }
 }
