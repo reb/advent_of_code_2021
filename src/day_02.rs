@@ -44,7 +44,12 @@ const INPUT: &str = include_str!("../input/day_02");
 
 pub fn run() {
     let instructions = parse_instructions(INPUT);
-    println!("{:?}", instructions);
+
+    let (horizontal, depth) = follow_instructions(&instructions);
+    println!(
+        "The final horizontal position multiplied by final depth is: {}",
+        horizontal * depth
+    );
 }
 
 #[derive(Debug, PartialEq)]
@@ -58,6 +63,32 @@ enum Action {
     Forward,
     Down,
     Up,
+}
+
+fn follow_instructions(instructions: &Vec<Instruction>) -> (i32, i32) {
+    instructions
+        .iter()
+        .fold((0, 0), |(horizontal, depth), instruction| {
+            let (d_horizontal, d_depth) = instruction_delta(instruction);
+            (horizontal + d_horizontal, depth + d_depth)
+        })
+}
+
+fn instruction_delta(instruction: &Instruction) -> (i32, i32) {
+    match instruction {
+        Instruction {
+            action: Action::Forward,
+            units,
+        } => (*units, 0),
+        Instruction {
+            action: Action::Down,
+            units,
+        } => (0, *units),
+        Instruction {
+            action: Action::Up,
+            units,
+        } => (0, -*units),
+    }
 }
 
 fn parse_instructions(input: &str) -> Vec<Instruction> {
@@ -117,5 +148,37 @@ mod tests {
         ];
 
         assert_eq!(parse_instructions(input), expected);
+    }
+
+    #[test]
+    fn test_follow_instructions() {
+        let instructions = vec![
+            Instruction {
+                action: Action::Forward,
+                units: 5,
+            },
+            Instruction {
+                action: Action::Down,
+                units: 5,
+            },
+            Instruction {
+                action: Action::Forward,
+                units: 8,
+            },
+            Instruction {
+                action: Action::Up,
+                units: 3,
+            },
+            Instruction {
+                action: Action::Down,
+                units: 8,
+            },
+            Instruction {
+                action: Action::Forward,
+                units: 2,
+            },
+        ];
+
+        assert_eq!(follow_instructions(&instructions), (15, 10));
     }
 }
