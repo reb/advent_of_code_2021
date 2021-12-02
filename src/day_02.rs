@@ -89,6 +89,12 @@ pub fn run() {
         "The final horizontal position multiplied by final depth is: {}",
         horizontal * depth
     );
+
+    let (horizontal, depth) = follow_aim_instructions(&instructions);
+    println!(
+        "Using the new interpretation of commands the final horizontal position multiplied by final depth is: {}",
+        horizontal * depth
+    );
 }
 
 #[derive(Debug, PartialEq)]
@@ -112,9 +118,18 @@ fn follow_instructions(instructions: &Vec<Instruction>) -> (i32, i32) {
     (submarine.horizontal, submarine.depth)
 }
 
+fn follow_aim_instructions(instructions: &Vec<Instruction>) -> (i32, i32) {
+    let mut submarine = Submarine::new();
+    for instruction in instructions.iter() {
+        submarine.execute_aim_instruction(instruction);
+    }
+    (submarine.horizontal, submarine.depth)
+}
+
 struct Submarine {
     horizontal: i32,
     depth: i32,
+    aim: i32,
 }
 
 impl Submarine {
@@ -122,6 +137,7 @@ impl Submarine {
         Submarine {
             horizontal: 0,
             depth: 0,
+            aim: 0,
         }
     }
 
@@ -139,6 +155,26 @@ impl Submarine {
                 action: Action::Up,
                 units,
             } => self.depth -= units,
+        }
+    }
+
+    fn execute_aim_instruction(&mut self, instruction: &Instruction) {
+        match instruction {
+            Instruction {
+                action: Action::Forward,
+                units,
+            } => {
+                self.horizontal += units;
+                self.depth += self.aim * units;
+            }
+            Instruction {
+                action: Action::Down,
+                units,
+            } => self.aim += units,
+            Instruction {
+                action: Action::Up,
+                units,
+            } => self.aim -= units,
         }
     }
 }
@@ -232,5 +268,37 @@ mod tests {
         ];
 
         assert_eq!(follow_instructions(&instructions), (15, 10));
+    }
+
+    #[test]
+    fn test_follow_aim_instructions() {
+        let instructions = vec![
+            Instruction {
+                action: Action::Forward,
+                units: 5,
+            },
+            Instruction {
+                action: Action::Down,
+                units: 5,
+            },
+            Instruction {
+                action: Action::Forward,
+                units: 8,
+            },
+            Instruction {
+                action: Action::Up,
+                units: 3,
+            },
+            Instruction {
+                action: Action::Down,
+                units: 8,
+            },
+            Instruction {
+                action: Action::Forward,
+                units: 2,
+            },
+        ];
+
+        assert_eq!(follow_aim_instructions(&instructions), (15, 60));
     }
 }
