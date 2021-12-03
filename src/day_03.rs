@@ -124,14 +124,16 @@
 /// generator rating and CO2 scrubber rating, then multiply them together. What
 /// is the life support rating of the submarine? (Be sure to represent your
 /// answer in decimal, not binary.)
+use itertools::Itertools;
+use std::cmp::Ordering;
 
 const INPUT: &str = include_str!("../input/day_03");
 
 pub fn run() {
     let diagnostic_report = load_diagnostic_report(INPUT);
 
-    let gamma_rate = calculate_gamma_rate(&diagnostic_report);
-    let epsilon_rate = calculate_epsilon_rate(&gamma_rate);
+    let gamma_rate = calculate_rate(&diagnostic_report, Criteria::MostCommon);
+    let epsilon_rate = calculate_rate(&diagnostic_report, Criteria::LeastCommon);
 
     println!(
         "The power consumption of the submarine is: {}",
@@ -139,41 +141,45 @@ pub fn run() {
     );
 }
 
-fn calculate_gamma_rate(diagnostic_report: &DiagnosticReport) -> Number {
-    let summed = diagnostic_report.iter().fold(
-        vec![0; diagnostic_report[0].len()],
-        |mut sum: Vec<u32>, number| {
-            for (i, n) in number.iter().enumerate() {
-                sum[i] += *n as u32;
-            }
-            sum
-        },
-    );
-
-    let half = (diagnostic_report.len() / 2) as u32;
-    summed
-        .into_iter()
-        .map(|n| if n > half { 1 } else { 0 })
+fn calculate_rate(diagnostic_report: &DiagnosticReport, criteria: Criteria) -> Number {
+    (0..diagnostic_report[0].len())
+        .map(|i| find_bit(diagnostic_report.iter().map(|number| number[i]), &criteria))
         .collect()
 }
 
-fn calculate_epsilon_rate(gamma_rate: &Number) -> Number {
-    gamma_rate.invert()
+fn find_bit(bits: impl Iterator<Item = u8>, criteria: &Criteria) -> u8 {
+    let counts = bits.counts();
+
+    // find the most common bit
+    let bit = match counts[&0].cmp(&counts[&1]) {
+        Ordering::Less => 1,
+        Ordering::Greater => 0,
+        Ordering::Equal => 1,
+    };
+
+    // flip it if least common was requested
+    match criteria {
+        Criteria::MostCommon => bit,
+        Criteria::LeastCommon => match bit {
+            0 => 1,
+            _ => 0,
+        },
+    }
 }
 
 type DiagnosticReport = Vec<Number>;
 type Number = Vec<u8>;
 
+enum Criteria {
+    MostCommon,
+    LeastCommon,
+}
+
 trait BitArray {
-    fn invert(&self) -> Number;
     fn to_u32(&self) -> u32;
 }
 
 impl BitArray for Number {
-    fn invert(&self) -> Number {
-        self.iter().map(|&n| if n == 1 { 0 } else { 1 }).collect()
-    }
-
     fn to_u32(&self) -> u32 {
         self.iter().fold(0, |result, &n| result << 1 ^ (n as u32))
     }
@@ -195,6 +201,23 @@ fn load_diagnostic_report(input: &str) -> DiagnosticReport {
 mod tests {
     use super::*;
 
+    fn get_diagnostic_report() -> DiagnosticReport {
+        vec![
+            vec![0, 0, 1, 0, 0],
+            vec![1, 1, 1, 1, 0],
+            vec![1, 0, 1, 1, 0],
+            vec![1, 0, 1, 1, 1],
+            vec![1, 0, 1, 0, 1],
+            vec![0, 1, 1, 1, 1],
+            vec![0, 0, 1, 1, 1],
+            vec![1, 1, 1, 0, 0],
+            vec![1, 0, 0, 0, 0],
+            vec![1, 1, 0, 0, 1],
+            vec![0, 0, 0, 1, 0],
+            vec![0, 1, 0, 1, 0],
+        ]
+    }
+
     #[test]
     fn test_load_diagnostic_report() {
         let input = "\
@@ -213,35 +236,21 @@ mod tests {
 
     #[test]
     fn test_gamma_rate() {
-        let diagnostic_report = vec![
-            vec![0, 0, 1, 0, 0],
-            vec![1, 1, 1, 1, 0],
-            vec![1, 0, 1, 1, 0],
-            vec![1, 0, 1, 1, 1],
-            vec![1, 0, 1, 0, 1],
-            vec![0, 1, 1, 1, 1],
-            vec![0, 0, 1, 1, 1],
-            vec![1, 1, 1, 0, 0],
-            vec![1, 0, 0, 0, 0],
-            vec![1, 1, 0, 0, 1],
-            vec![0, 0, 0, 1, 0],
-            vec![0, 1, 0, 1, 0],
-        ];
-
         let expected_gamma_rate = vec![1, 0, 1, 1, 0];
 
         assert_eq!(
-            calculate_gamma_rate(&diagnostic_report),
+            calculate_rate(&get_diagnostic_report(), Criteria::MostCommon),
             expected_gamma_rate
         );
     }
 
     #[test]
     fn test_epsilon_rate() {
-        let gamma_rate = vec![1, 0, 1, 1, 0];
-
         let expected_epsilon_rate = vec![0, 1, 0, 0, 1];
 
-        assert_eq!(calculate_epsilon_rate(&gamma_rate), expected_epsilon_rate);
+        assert_eq!(
+            calculate_rate(&get_diagnostic_report(), Criteria::LeastCommon),
+            expected_epsilon_rate
+        );
     }
 }
