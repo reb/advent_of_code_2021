@@ -155,7 +155,7 @@ fn find_rating(diagnostic_report: &DiagnosticReport, criteria: Criteria) -> Numb
     let number_size = diagnostic_report[0].len();
 
     for i in 0..number_size {
-        let filter_bit = find_bit(filtered_report.iter().map(|number| number[i]), &criteria);
+        let filter_bit = find_bit(&filtered_report, i, &criteria);
         filtered_report = filtered_report
             .into_iter()
             .filter(|number| number[i] == filter_bit)
@@ -174,12 +174,12 @@ fn find_rating(diagnostic_report: &DiagnosticReport, criteria: Criteria) -> Numb
 
 fn calculate_rate(diagnostic_report: &DiagnosticReport, criteria: Criteria) -> Number {
     (0..diagnostic_report[0].len())
-        .map(|i| find_bit(diagnostic_report.iter().map(|number| number[i]), &criteria))
+        .map(|i| find_bit(&diagnostic_report, i, &criteria))
         .collect()
 }
 
-fn find_bit(bits: impl Iterator<Item = u8>, criteria: &Criteria) -> u8 {
-    let counts = bits.counts();
+fn find_bit(diagnostic_report: &DiagnosticReport, i: usize, criteria: &Criteria) -> u8 {
+    let counts = diagnostic_report.iter().map(|number| number[i]).counts();
 
     // find the most common bit
     let bit = match counts[&0].cmp(&counts[&1]) {
