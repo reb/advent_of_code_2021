@@ -53,6 +53,42 @@
 const INPUT: &str = include_str!("../input/day_03");
 
 pub fn run() {
-    println!("Not implemented yet");
-    unimplemented!();
+    let diagnostic_report = load_diagnostic_report(INPUT);
+    println!("{:?}", diagnostic_report);
+}
+
+type DiagnosticReport = Vec<Number>;
+type Number = Vec<u8>;
+
+fn load_diagnostic_report(input: &str) -> DiagnosticReport {
+    input
+        .lines()
+        .map(|line| {
+            line.chars()
+                .filter_map(|c| c.to_digit(10))
+                .map(|i| i as u8)
+                .collect()
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_load_diagnostic_report() {
+        let input = "\
+            00100\n\
+            11110\n\
+            10110\n";
+
+        let expected_diagnostic_report = vec![
+            vec![0, 0, 1, 0, 0],
+            vec![1, 1, 1, 1, 0],
+            vec![1, 0, 1, 1, 0],
+        ];
+
+        assert_eq!(load_diagnostic_report(input), expected_diagnostic_report);
+    }
 }
