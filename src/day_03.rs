@@ -139,6 +139,37 @@ pub fn run() {
         "The power consumption of the submarine is: {}",
         gamma_rate.to_u32() * epsilon_rate.to_u32()
     );
+
+    let oxygen_generator_rating = find_rating(&diagnostic_report, Criteria::MostCommon);
+    let co2_scrubber_rating = find_rating(&diagnostic_report, Criteria::LeastCommon);
+
+    println!(
+        "The life support rating of the submarine is: {}",
+        oxygen_generator_rating.to_u32() * co2_scrubber_rating.to_u32()
+    );
+}
+
+fn find_rating(diagnostic_report: &DiagnosticReport, criteria: Criteria) -> Number {
+    let mut filtered_report = diagnostic_report.clone();
+
+    let number_size = diagnostic_report[0].len();
+
+    for i in 0..number_size {
+        let filter_bit = find_bit(filtered_report.iter().map(|number| number[i]), &criteria);
+        filtered_report = filtered_report
+            .into_iter()
+            .filter(|number| number[i] == filter_bit)
+            .collect();
+        if filtered_report.len() == 1 {
+            break;
+        }
+    }
+    assert_eq!(
+        filtered_report.len(),
+        1,
+        "Expected there to be only 1 number left"
+    );
+    filtered_report.into_iter().next().unwrap()
 }
 
 fn calculate_rate(diagnostic_report: &DiagnosticReport, criteria: Criteria) -> Number {
@@ -251,6 +282,26 @@ mod tests {
         assert_eq!(
             calculate_rate(&get_diagnostic_report(), Criteria::LeastCommon),
             expected_epsilon_rate
+        );
+    }
+
+    #[test]
+    fn test_find_rating_oxygen_generator() {
+        let expected_oxygen_generator_rating = vec![1, 0, 1, 1, 1];
+
+        assert_eq!(
+            find_rating(&get_diagnostic_report(), Criteria::MostCommon),
+            expected_oxygen_generator_rating
+        );
+    }
+
+    #[test]
+    fn test_find_rating_co2_scrubber() {
+        let expected_co2_scrubber_rating = vec![0, 1, 0, 1, 0];
+
+        assert_eq!(
+            find_rating(&get_diagnostic_report(), Criteria::LeastCommon),
+            expected_co2_scrubber_rating
         );
     }
 }
