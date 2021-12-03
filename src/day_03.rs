@@ -54,11 +54,55 @@ const INPUT: &str = include_str!("../input/day_03");
 
 pub fn run() {
     let diagnostic_report = load_diagnostic_report(INPUT);
-    println!("{:?}", diagnostic_report);
+
+    let gamma_rate = calculate_gamma_rate(&diagnostic_report);
+    let epsilon_rate = calculate_epsilon_rate(&gamma_rate);
+
+    println!(
+        "The power consumption of the submarine is: {}",
+        gamma_rate.to_u32() * epsilon_rate.to_u32()
+    );
+}
+
+fn calculate_gamma_rate(diagnostic_report: &DiagnosticReport) -> Number {
+    let summed = diagnostic_report.iter().fold(
+        vec![0; diagnostic_report[0].len()],
+        |mut sum: Vec<u32>, number| {
+            for (i, n) in number.iter().enumerate() {
+                sum[i] += *n as u32;
+            }
+            sum
+        },
+    );
+
+    let half = (diagnostic_report.len() / 2) as u32;
+    summed
+        .into_iter()
+        .map(|n| if n > half { 1 } else { 0 })
+        .collect()
+}
+
+fn calculate_epsilon_rate(gamma_rate: &Number) -> Number {
+    gamma_rate.invert()
 }
 
 type DiagnosticReport = Vec<Number>;
 type Number = Vec<u8>;
+
+trait BitArray {
+    fn invert(&self) -> Number;
+    fn to_u32(&self) -> u32;
+}
+
+impl BitArray for Number {
+    fn invert(&self) -> Number {
+        self.iter().map(|&n| if n == 1 { 0 } else { 1 }).collect()
+    }
+
+    fn to_u32(&self) -> u32 {
+        self.iter().fold(0, |result, &n| result << 1 ^ (n as u32))
+    }
+}
 
 fn load_diagnostic_report(input: &str) -> DiagnosticReport {
     input
@@ -90,5 +134,39 @@ mod tests {
         ];
 
         assert_eq!(load_diagnostic_report(input), expected_diagnostic_report);
+    }
+
+    #[test]
+    fn test_gamma_rate() {
+        let diagnostic_report = vec![
+            vec![0, 0, 1, 0, 0],
+            vec![1, 1, 1, 1, 0],
+            vec![1, 0, 1, 1, 0],
+            vec![1, 0, 1, 1, 1],
+            vec![1, 0, 1, 0, 1],
+            vec![0, 1, 1, 1, 1],
+            vec![0, 0, 1, 1, 1],
+            vec![1, 1, 1, 0, 0],
+            vec![1, 0, 0, 0, 0],
+            vec![1, 1, 0, 0, 1],
+            vec![0, 0, 0, 1, 0],
+            vec![0, 1, 0, 1, 0],
+        ];
+
+        let expected_gamma_rate = vec![1, 0, 1, 1, 0];
+
+        assert_eq!(
+            calculate_gamma_rate(&diagnostic_report),
+            expected_gamma_rate
+        );
+    }
+
+    #[test]
+    fn test_epsilon_rate() {
+        let gamma_rate = vec![1, 0, 1, 1, 0];
+
+        let expected_epsilon_rate = vec![0, 1, 0, 0, 1];
+
+        assert_eq!(calculate_epsilon_rate(&gamma_rate), expected_epsilon_rate);
     }
 }
