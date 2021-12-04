@@ -100,17 +100,33 @@ const INPUT: &str = include_str!("../input/day_04");
 pub fn run() {
     let (numbers, mut boards) = load_bingo_game(INPUT);
 
-    'game: for number in numbers.iter() {
-        for board in boards.iter_mut() {
-            board.mark(number);
-            if board.bingo() {
-                println!(
-                    "Found a board that will have a final score of: {}",
-                    board.score() * number
-                );
-                break 'game;
-            }
-        }
+    let mut first_found = false;
+    for number in numbers.iter() {
+        let last_one = boards.len() == 1;
+        boards = boards
+            .into_iter()
+            .filter_map(|mut board| {
+                board.mark(number);
+                if board.bingo() {
+                    if !first_found {
+                        first_found = true;
+                        println!(
+                            "The first board that will win has a final score of: {}",
+                            board.score() * number
+                        );
+                    }
+                    if last_one {
+                        println!(
+                            "The last board that will win has a final score of: {}",
+                            board.score() * number
+                        );
+                    }
+                    None
+                } else {
+                    Some(board)
+                }
+            })
+            .collect();
     }
 }
 
