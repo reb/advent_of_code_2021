@@ -86,7 +86,22 @@ pub fn run() {
 }
 
 type BingoNumber = u32;
-type BingoBoard = HashMap<(u8, u8), BingoNumber>;
+type Coordinates = (u8, u8);
+
+#[derive(Debug, PartialEq)]
+struct BingoBoard {
+    numbers: HashMap<Coordinates, BingoNumber>,
+    marked: HashMap<Coordinates, bool>,
+}
+
+impl BingoBoard {
+    fn new(numbers: HashMap<Coordinates, BingoNumber>) -> BingoBoard {
+        BingoBoard {
+            numbers,
+            marked: HashMap::new(),
+        }
+    }
+}
 
 fn load_bingo_game(input: &str) -> (Vec<BingoNumber>, Vec<BingoBoard>) {
     let mut blocks = input.split("\n\n");
@@ -103,17 +118,19 @@ fn load_bingo_game(input: &str) -> (Vec<BingoNumber>, Vec<BingoBoard>) {
 }
 
 fn parse_board(board: &str) -> BingoBoard {
-    board
-        .lines()
-        .enumerate()
-        .flat_map(|(x, line)| {
-            line.split_whitespace()
-                .filter_map(|n| n.parse().ok())
-                .enumerate()
-                .map(|(y, n)| ((x as u8, y as u8), n))
-                .collect::<Vec<_>>()
-        })
-        .collect()
+    BingoBoard::new(
+        board
+            .lines()
+            .enumerate()
+            .flat_map(|(x, line)| {
+                line.split_whitespace()
+                    .filter_map(|n| n.parse().ok())
+                    .enumerate()
+                    .map(|(y, n)| ((x as u8, y as u8), n))
+                    .collect::<Vec<_>>()
+            })
+            .collect(),
+    )
 }
 
 #[cfg(test)]
@@ -142,66 +159,70 @@ mod tests {
             3, 26, 1,
         ];
         let expected_boards = vec![
-            [
-                ((0, 0), 22),
-                ((0, 1), 13),
-                ((0, 2), 17),
-                ((0, 3), 11),
-                ((0, 4), 0),
-                ((1, 0), 8),
-                ((1, 1), 2),
-                ((1, 2), 23),
-                ((1, 3), 4),
-                ((1, 4), 24),
-                ((2, 0), 21),
-                ((2, 1), 9),
-                ((2, 2), 14),
-                ((2, 3), 16),
-                ((2, 4), 7),
-                ((3, 0), 6),
-                ((3, 1), 10),
-                ((3, 2), 3),
-                ((3, 3), 18),
-                ((3, 4), 5),
-                ((4, 0), 1),
-                ((4, 1), 12),
-                ((4, 2), 20),
-                ((4, 3), 15),
-                ((4, 4), 19),
-            ]
-            .iter()
-            .cloned()
-            .collect(),
-            [
-                ((0, 0), 3),
-                ((0, 1), 15),
-                ((0, 2), 0),
-                ((0, 3), 2),
-                ((0, 4), 22),
-                ((1, 0), 9),
-                ((1, 1), 18),
-                ((1, 2), 13),
-                ((1, 3), 17),
-                ((1, 4), 5),
-                ((2, 0), 19),
-                ((2, 1), 8),
-                ((2, 2), 7),
-                ((2, 3), 25),
-                ((2, 4), 23),
-                ((3, 0), 20),
-                ((3, 1), 11),
-                ((3, 2), 10),
-                ((3, 3), 24),
-                ((3, 4), 4),
-                ((4, 0), 14),
-                ((4, 1), 21),
-                ((4, 2), 16),
-                ((4, 3), 12),
-                ((4, 4), 6),
-            ]
-            .iter()
-            .cloned()
-            .collect(),
+            BingoBoard::new(
+                [
+                    ((0, 0), 22),
+                    ((0, 1), 13),
+                    ((0, 2), 17),
+                    ((0, 3), 11),
+                    ((0, 4), 0),
+                    ((1, 0), 8),
+                    ((1, 1), 2),
+                    ((1, 2), 23),
+                    ((1, 3), 4),
+                    ((1, 4), 24),
+                    ((2, 0), 21),
+                    ((2, 1), 9),
+                    ((2, 2), 14),
+                    ((2, 3), 16),
+                    ((2, 4), 7),
+                    ((3, 0), 6),
+                    ((3, 1), 10),
+                    ((3, 2), 3),
+                    ((3, 3), 18),
+                    ((3, 4), 5),
+                    ((4, 0), 1),
+                    ((4, 1), 12),
+                    ((4, 2), 20),
+                    ((4, 3), 15),
+                    ((4, 4), 19),
+                ]
+                .iter()
+                .cloned()
+                .collect(),
+            ),
+            BingoBoard::new(
+                [
+                    ((0, 0), 3),
+                    ((0, 1), 15),
+                    ((0, 2), 0),
+                    ((0, 3), 2),
+                    ((0, 4), 22),
+                    ((1, 0), 9),
+                    ((1, 1), 18),
+                    ((1, 2), 13),
+                    ((1, 3), 17),
+                    ((1, 4), 5),
+                    ((2, 0), 19),
+                    ((2, 1), 8),
+                    ((2, 2), 7),
+                    ((2, 3), 25),
+                    ((2, 4), 23),
+                    ((3, 0), 20),
+                    ((3, 1), 11),
+                    ((3, 2), 10),
+                    ((3, 3), 24),
+                    ((3, 4), 4),
+                    ((4, 0), 14),
+                    ((4, 1), 21),
+                    ((4, 2), 16),
+                    ((4, 3), 12),
+                    ((4, 4), 6),
+                ]
+                .iter()
+                .cloned()
+                .collect(),
+            ),
         ];
 
         assert_eq!(load_bingo_game(input), (expected_numbers, expected_boards));
