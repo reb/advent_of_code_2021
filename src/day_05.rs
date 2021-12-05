@@ -57,12 +57,32 @@
 /// two lines overlap?
 use regex::{Match, Regex};
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 const INPUT: &str = include_str!("../input/day_05");
 
 pub fn run() {
     let vents: Vec<_> = INPUT.lines().filter_map(HydrothermalVent::parse).collect();
-    println!("vents: {:?}", vents);
+
+    let map = map_out(vents.iter().filter(|vent| vent.horizontal_or_vertical()));
+    let multiple_vent_points = map
+        .values()
+        .filter(|&amount_of_vents| amount_of_vents > &1)
+        .count();
+
+    println!(
+        "There are {} points where two vent lines overlap",
+        multiple_vent_points
+    );
+}
+
+fn map_out<'a>(vents: impl Iterator<Item = &'a HydrothermalVent>) -> HashMap<Coordinates, u32> {
+    vents
+        .flat_map(|vent| vent.iter())
+        .fold(HashMap::new(), |mut map, position| {
+            *map.entry(position).or_insert(0) += 1;
+            map
+        })
 }
 
 type Coordinates = (u32, u32);
@@ -255,5 +275,73 @@ mod tests {
         assert_eq!(vent_iter.next(), Some((8, 7)));
         assert_eq!(vent_iter.next(), Some((7, 7)));
         assert_eq!(vent_iter.next(), None);
+    }
+
+    #[test]
+    fn test_map_out() {
+        let vents = vec![
+            HydrothermalVent {
+                end_a: (0, 9),
+                end_b: (5, 9),
+            },
+            HydrothermalVent {
+                end_a: (9, 4),
+                end_b: (3, 4),
+            },
+            HydrothermalVent {
+                end_a: (2, 2),
+                end_b: (2, 1),
+            },
+            HydrothermalVent {
+                end_a: (7, 0),
+                end_b: (7, 4),
+            },
+            HydrothermalVent {
+                end_a: (0, 9),
+                end_b: (2, 9),
+            },
+            HydrothermalVent {
+                end_a: (3, 4),
+                end_b: (1, 4),
+            },
+        ];
+
+        // .......1..
+        // ..1....1..
+        // ..1....1..
+        // .......1..
+        // .112111211
+        // ..........
+        // ..........
+        // ..........
+        // ..........
+        // 222111....
+        let expected_map = [
+            ((7, 0), 1),
+            ((2, 1), 1),
+            ((7, 1), 1),
+            ((2, 2), 1),
+            ((7, 2), 1),
+            ((7, 3), 1),
+            ((1, 4), 1),
+            ((2, 4), 1),
+            ((3, 4), 2),
+            ((4, 4), 1),
+            ((5, 4), 1),
+            ((6, 4), 1),
+            ((7, 4), 2),
+            ((8, 4), 1),
+            ((9, 4), 1),
+            ((0, 9), 2),
+            ((1, 9), 2),
+            ((2, 9), 2),
+            ((3, 9), 1),
+            ((4, 9), 1),
+            ((5, 9), 1),
+        ]
+        .into_iter()
+        .collect();
+
+        assert_eq!(map_out(vents.iter()), expected_map);
     }
 }
