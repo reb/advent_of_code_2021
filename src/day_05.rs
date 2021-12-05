@@ -103,8 +103,18 @@ pub fn run() {
         .count();
 
     println!(
-        "There are {} points where two vent lines overlap",
+        "There are {} points where multiple vent lines overlap, when considering only horizontal and vertical lines",
         multiple_vent_points
+    );
+
+    let all_lines_multiple_vent_points = map_out(vents.iter())
+        .values()
+        .filter(|&amount_of_vents| amount_of_vents > &1)
+        .count();
+
+    println!(
+        "There are {} points where multiple vent lines overlap, when considering all lines",
+        all_lines_multiple_vent_points
     );
 }
 
@@ -306,6 +316,36 @@ mod tests {
         assert_eq!(vent_iter.next(), Some((9, 7)));
         assert_eq!(vent_iter.next(), Some((8, 7)));
         assert_eq!(vent_iter.next(), Some((7, 7)));
+        assert_eq!(vent_iter.next(), None);
+    }
+
+    #[test]
+    fn test_hydrothermal_vent_iter_3() {
+        // An entry like 1,1 -> 3,3 covers points 1,1, 2,2, and 3,3.
+        let vent = HydrothermalVent {
+            end_a: (1, 1),
+            end_b: (3, 3),
+        };
+        let mut vent_iter = vent.iter();
+
+        assert_eq!(vent_iter.next(), Some((1, 1)));
+        assert_eq!(vent_iter.next(), Some((2, 2)));
+        assert_eq!(vent_iter.next(), Some((3, 3)));
+        assert_eq!(vent_iter.next(), None);
+    }
+
+    #[test]
+    fn test_hydrothermal_vent_iter_4() {
+        // An entry like 9,7 -> 7,9 covers points 9,7, 8,8, and 7,9.
+        let vent = HydrothermalVent {
+            end_a: (9, 7),
+            end_b: (7, 9),
+        };
+        let mut vent_iter = vent.iter();
+
+        assert_eq!(vent_iter.next(), Some((9, 7)));
+        assert_eq!(vent_iter.next(), Some((8, 8)));
+        assert_eq!(vent_iter.next(), Some((7, 9)));
         assert_eq!(vent_iter.next(), None);
     }
 
