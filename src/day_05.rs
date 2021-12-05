@@ -55,16 +55,19 @@
 ///
 /// Consider only horizontal and vertical lines. At how many points do at least
 /// two lines overlap?
+use regex::{Match, Regex};
 use std::cmp::Ordering;
 
 const INPUT: &str = include_str!("../input/day_05");
 
 pub fn run() {
-    println!("Not implemented yet");
-    unimplemented!();
+    let vents: Vec<_> = INPUT.lines().filter_map(HydrothermalVent::parse).collect();
+    println!("vents: {:?}", vents);
 }
 
 type Coordinates = (u32, u32);
+
+#[derive(Debug, PartialEq)]
 struct HydrothermalVent {
     end_a: Coordinates,
     end_b: Coordinates,
@@ -84,6 +87,29 @@ impl HydrothermalVent {
             end: self.end_b,
         }
     }
+
+    fn parse(line: &str) -> Option<HydrothermalVent> {
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"([0-9]+),([0-9]+) -> ([0-9]+),([0-9]+)").unwrap();
+        }
+        RE.captures(line).and_then(|groups| {
+            (groups
+                .get(1)
+                .and_then(match_as_u32)
+                .zip(groups.get(2).and_then(match_as_u32)))
+            .zip_with(
+                groups
+                    .get(3)
+                    .and_then(match_as_u32)
+                    .zip(groups.get(4).and_then(match_as_u32)),
+                |end_a, end_b| HydrothermalVent { end_a, end_b },
+            )
+        })
+    }
+}
+
+fn match_as_u32(m: Match) -> Option<u32> {
+    m.as_str().parse().ok()
 }
 
 struct HydrothermalVentIter {
@@ -123,6 +149,19 @@ impl Iterator for HydrothermalVentIter {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_hydrothermal_vent_parse() {
+        let input = "0,9 -> 5,9";
+
+        assert_eq!(
+            HydrothermalVent::parse(input),
+            Some(HydrothermalVent {
+                end_a: (0, 9),
+                end_b: (5, 9)
+            })
+        );
+    }
 
     #[test]
     fn test_hydrothermal_vent_horizontal_or_vertical() {
