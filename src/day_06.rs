@@ -81,15 +81,28 @@ pub fn run() {
     let mut fish_ages = load_fish_ages(INPUT);
 
     // simulate 80 days
-    for _ in 0..80 {
+    let mut day = 0;
+    while day < 80 {
         fish_ages = simulate_day(fish_ages);
+        day += 1;
     }
+    println!(
+        "There are {} lanternfish after 80 days",
+        fish_ages.iter().sum::<u64>()
+    );
 
-    let amount_of_fish = fish_ages.iter().sum::<u32>();
-    println!("There are {} lanternfish after 80 days", amount_of_fish);
+    // continue until 256 days
+    while day < 256 {
+        fish_ages = simulate_day(fish_ages);
+        day += 1;
+    }
+    println!(
+        "There are {} lanternfish after 256 days",
+        fish_ages.iter().sum::<u64>()
+    );
 }
 
-type FishAges = [u32; 9];
+type FishAges = [u64; 9];
 
 fn load_fish_ages(input: &str) -> FishAges {
     let mut fish_ages = [0; 9];
@@ -177,7 +190,7 @@ mod tests {
             fish_ages = simulate_day(fish_ages);
         }
 
-        assert_eq!(fish_ages.iter().sum::<u32>(), 26);
+        assert_eq!(fish_ages.iter().sum::<u64>(), 26);
     }
 
     #[test]
@@ -190,6 +203,6 @@ mod tests {
             fish_ages = simulate_day(fish_ages);
         }
 
-        assert_eq!(fish_ages.iter().sum::<u32>(), 5934);
+        assert_eq!(fish_ages.iter().sum::<u64>(), 5934);
     }
 }
