@@ -78,6 +78,118 @@
 const INPUT: &str = include_str!("../input/day_06");
 
 pub fn run() {
-    println!("Not implemented yet");
-    unimplemented!();
+    let mut fish_ages = load_fish_ages(INPUT);
+
+    // simulate 80 days
+    for _ in 0..80 {
+        fish_ages = simulate_day(fish_ages);
+    }
+
+    let amount_of_fish = fish_ages.iter().sum::<u32>();
+    println!("There are {} lanternfish after 80 days", amount_of_fish);
+}
+
+type FishAges = [u32; 9];
+
+fn load_fish_ages(input: &str) -> FishAges {
+    let mut fish_ages = [0; 9];
+    for i in input
+        .split(',')
+        .map(str::trim)
+        .map(str::parse::<usize>)
+        .filter_map(Result::ok)
+    {
+        fish_ages[i] += 1;
+    }
+    fish_ages
+}
+
+fn simulate_day(mut fish_ages: FishAges) -> FishAges {
+    fish_ages.rotate_left(1);
+    fish_ages[6] += fish_ages[8];
+    fish_ages
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_load_fish_ages() {
+        let input = "3,4,3,1,2\n";
+
+        let expected_fish_ages = [0, 1, 1, 2, 1, 0, 0, 0, 0];
+
+        assert_eq!(load_fish_ages(input), expected_fish_ages);
+    }
+
+    #[test]
+    fn test_simulate_day_1() {
+        // Initial state: 3,4,3,1,2
+        let fish_ages_initial = [0, 1, 1, 2, 1, 0, 0, 0, 0];
+
+        // After  1 day:  2,3,2,0,1
+        let expected_fish_ages_day_1 = [1, 1, 2, 1, 0, 0, 0, 0, 0];
+
+        assert_eq!(simulate_day(fish_ages_initial), expected_fish_ages_day_1);
+    }
+
+    #[test]
+    fn test_simulate_day_2() {
+        // After  1 day:  2,3,2,0,1
+        let fish_ages_day_1 = [1, 1, 2, 1, 0, 0, 0, 0, 0];
+
+        // After  2 days: 1,2,1,6,0,8
+        let expected_fish_ages_day_2 = [1, 2, 1, 0, 0, 0, 1, 0, 1];
+
+        assert_eq!(simulate_day(fish_ages_day_1), expected_fish_ages_day_2);
+    }
+
+    #[test]
+    fn test_simulate_day_3() {
+        // After  2 days: 1,2,1,6,0,8
+        let fish_ages_day_2 = [1, 2, 1, 0, 0, 0, 1, 0, 1];
+
+        // After  3 days: 0,1,0,5,6,7,8
+        let expected_fish_ages_day_3 = [2, 1, 0, 0, 0, 1, 1, 1, 1];
+
+        assert_eq!(simulate_day(fish_ages_day_2), expected_fish_ages_day_3);
+    }
+
+    #[test]
+    fn test_simulate_day_4() {
+        // After  3 days: 0,1,0,5,6,7,8
+        let fish_ages_day_3 = [2, 1, 0, 0, 0, 1, 1, 1, 1];
+
+        // After  4 days: 6,0,6,4,5,6,7,8,8
+        let expected_fish_ages_day_4 = [1, 0, 0, 0, 1, 1, 3, 1, 2];
+
+        assert_eq!(simulate_day(fish_ages_day_3), expected_fish_ages_day_4);
+    }
+
+    #[test]
+    fn test_simulate_18_days() {
+        // Initial state: 3,4,3,1,2
+        let mut fish_ages = [0, 1, 1, 2, 1, 0, 0, 0, 0];
+
+        // simulate 18 days
+        for _ in 0..18 {
+            fish_ages = simulate_day(fish_ages);
+        }
+
+        assert_eq!(fish_ages.iter().sum::<u32>(), 26);
+    }
+
+    #[test]
+    fn test_simulate_80_days() {
+        // Initial state: 3,4,3,1,2
+        let mut fish_ages = [0, 1, 1, 2, 1, 0, 0, 0, 0];
+
+        // simulate 80 days
+        for _ in 0..80 {
+            fish_ages = simulate_day(fish_ages);
+        }
+
+        assert_eq!(fish_ages.iter().sum::<u32>(), 5934);
+    }
 }
