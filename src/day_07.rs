@@ -49,10 +49,44 @@
 /// Determine the horizontal position that the crabs can align to using the
 /// least fuel possible. How much fuel must they spend to align to that
 /// position?
+use itertools::Itertools;
+use std::collections::HashMap;
 
 const INPUT: &str = include_str!("../input/day_07");
 
 pub fn run() {
-    println!("Not implemented yet");
-    unimplemented!();
+    let crabs = load_crabs(INPUT);
+    println!("crabs: {:?}", crabs);
+}
+
+type HorizontalPosition = i32;
+type Amount = i32;
+type Crabs = HashMap<HorizontalPosition, Amount>;
+
+fn load_crabs(input: &str) -> Crabs {
+    input
+        .split(',')
+        .map(str::trim)
+        .map(str::parse)
+        .filter_map(Result::ok)
+        .counts()
+        .into_iter()
+        .map(|(position, amount)| (position, amount as Amount))
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_load_crabs() {
+        let input = "16,1,2,0,4,2,7,1,2,14\n";
+
+        let expected_crabs = [(0, 1), (1, 2), (2, 3), (4, 1), (7, 1), (14, 1), (16, 1)]
+            .into_iter()
+            .collect();
+
+        assert_eq!(load_crabs(input), expected_crabs);
+    }
 }
