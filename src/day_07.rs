@@ -56,12 +56,32 @@ const INPUT: &str = include_str!("../input/day_07");
 
 pub fn run() {
     let crabs = load_crabs(INPUT);
-    println!("crabs: {:?}", crabs);
+
+    println!(
+        "The least fuel for the crabs to spend to align is: {}",
+        find_least_fuel_cost(&crabs)
+    );
 }
 
 type HorizontalPosition = i32;
 type Amount = i32;
+type FuelCost = i32;
 type Crabs = HashMap<HorizontalPosition, Amount>;
+
+fn find_least_fuel_cost(crabs: &Crabs) -> FuelCost {
+    // simply iterate over all positions to find the smallest
+    (0..*crabs.keys().max().unwrap())
+        .map(|position| calculate_fuel_cost(crabs, position))
+        .min()
+        .expect("Expected to find a minimal fuel cost")
+}
+
+fn calculate_fuel_cost(crabs: &Crabs, position: HorizontalPosition) -> FuelCost {
+    crabs
+        .iter()
+        .map(|(crab_position, amount)| (position - crab_position).abs() * amount)
+        .sum()
+}
 
 fn load_crabs(input: &str) -> Crabs {
     input
@@ -78,6 +98,7 @@ fn load_crabs(input: &str) -> Crabs {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test_case::test_case;
 
     #[test]
     fn test_load_crabs() {
@@ -88,5 +109,26 @@ mod tests {
             .collect();
 
         assert_eq!(load_crabs(input), expected_crabs);
+    }
+
+    #[test_case(1, 41 ; "position 1, fuel cost 41")]
+    #[test_case(2, 37 ; "position 2, fuel cost 37")]
+    #[test_case(3, 39 ; "position 3, fuel cost 39")]
+    #[test_case(10, 71 ; "position 10, fuel cost 71")]
+    fn test_calculate_fuel_cost(position: HorizontalPosition, fuel_cost: FuelCost) {
+        let crabs = [(0, 1), (1, 2), (2, 3), (4, 1), (7, 1), (14, 1), (16, 1)]
+            .into_iter()
+            .collect();
+
+        assert_eq!(calculate_fuel_cost(&crabs, position), fuel_cost);
+    }
+
+    #[test]
+    fn test_find_least_fuel_position() {
+        let crabs = [(0, 1), (1, 2), (2, 3), (4, 1), (7, 1), (14, 1), (16, 1)]
+            .into_iter()
+            .collect();
+
+        assert_eq!(find_least_fuel_cost(&crabs), 37);
     }
 }
