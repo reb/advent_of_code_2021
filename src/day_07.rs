@@ -164,16 +164,16 @@ mod tests {
         assert_eq!(load_crabs(input), expected_crabs);
     }
 
-    #[test_case(1, 41 ; "position 1, fuel cost 41")]
-    #[test_case(2, 37 ; "position 2, fuel cost 37")]
-    #[test_case(3, 39 ; "position 3, fuel cost 39")]
-    #[test_case(10, 71 ; "position 10, fuel cost 71")]
-    fn test_calculate_fuel_cost(position: HorizontalPosition, fuel_cost: FuelCost) {
+    #[test_case(1 => 41 ; "position 1, fuel cost 41")]
+    #[test_case(2 => 37 ; "position 2, fuel cost 37")]
+    #[test_case(3 => 39 ; "position 3, fuel cost 39")]
+    #[test_case(10 => 71 ; "position 10, fuel cost 71")]
+    fn test_calculate_fuel_cost(position: HorizontalPosition) -> FuelCost {
         let crabs = [(0, 1), (1, 2), (2, 3), (4, 1), (7, 1), (14, 1), (16, 1)]
             .into_iter()
             .collect();
 
-        assert_eq!(calculate_fuel_cost(&crabs, position), fuel_cost);
+        calculate_fuel_cost(&crabs, position)
     }
 
     #[test]
@@ -185,13 +185,13 @@ mod tests {
         assert_eq!(find_least_fuel_cost(&crabs, calculate_fuel_cost), 37);
     }
 
-    #[test_case(2, 206 ; "position 2, fuel cost 206")]
-    #[test_case(5, 168 ; "position 5, fuel cost 168")]
-    fn test_calculate_expensive_fuel_cost(position: HorizontalPosition, fuel_cost: FuelCost) {
+    #[test_case(2 => 206 ; "position 2, fuel cost 206")]
+    #[test_case(5 => 168 ; "position 5, fuel cost 168")]
+    fn test_calculate_expensive_fuel_cost(position: HorizontalPosition) -> FuelCost {
         let crabs = [(0, 1), (1, 2), (2, 3), (4, 1), (7, 1), (14, 1), (16, 1)]
             .into_iter()
             .collect();
 
-        assert_eq!(calculate_expensive_fuel_cost(&crabs, position), fuel_cost);
+        calculate_expensive_fuel_cost(&crabs, position)
     }
 }
