@@ -9,3 +9,6 @@ edition = "2021"
 regex = "*"
 lazy_static = "*"
 itertools = "*"
+
+[dev-dependencies]
+test-case = "1.2.1"
