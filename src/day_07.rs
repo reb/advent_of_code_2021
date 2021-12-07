@@ -91,7 +91,12 @@ pub fn run() {
 
     println!(
         "The least fuel for the crabs to spend to align is: {}",
-        find_least_fuel_cost(&crabs)
+        find_least_fuel_cost(&crabs, calculate_fuel_cost)
+    );
+
+    println!(
+        "The least fuel for the crabs to spend with the expensive fuel costs to align is: {}",
+        find_least_fuel_cost(&crabs, calculate_expensive_fuel_cost)
     );
 }
 
@@ -100,10 +105,13 @@ type Amount = i32;
 type FuelCost = i32;
 type Crabs = HashMap<HorizontalPosition, Amount>;
 
-fn find_least_fuel_cost(crabs: &Crabs) -> FuelCost {
+fn find_least_fuel_cost(
+    crabs: &Crabs,
+    calculate_cost: fn(&Crabs, HorizontalPosition) -> FuelCost,
+) -> FuelCost {
     // simply iterate over all positions to find the smallest
     (0..*crabs.keys().max().unwrap())
-        .map(|position| calculate_fuel_cost(crabs, position))
+        .map(|position| calculate_cost(crabs, position))
         .min()
         .expect("Expected to find a minimal fuel cost")
 }
@@ -112,6 +120,19 @@ fn calculate_fuel_cost(crabs: &Crabs, position: HorizontalPosition) -> FuelCost 
     crabs
         .iter()
         .map(|(crab_position, amount)| (position - crab_position).abs() * amount)
+        .sum()
+}
+
+fn calculate_expensive_fuel_cost(crabs: &Crabs, position: HorizontalPosition) -> FuelCost {
+    crabs
+        .iter()
+        .map(|(crab_position, amount)| {
+            let distance = (position - crab_position).abs();
+            // cost will be
+            // 1 + 2 + 3 + .. + n = (n * (n + 1)) / 2
+            // https://en.wikipedia.org/wiki/Triangular_number
+            ((distance * (distance + 1)) / 2) * amount
+        })
         .sum()
 }
 
@@ -161,6 +182,16 @@ mod tests {
             .into_iter()
             .collect();
 
-        assert_eq!(find_least_fuel_cost(&crabs), 37);
+        assert_eq!(find_least_fuel_cost(&crabs, calculate_fuel_cost), 37);
+    }
+
+    #[test_case(2, 206 ; "position 2, fuel cost 206")]
+    #[test_case(5, 168 ; "position 5, fuel cost 168")]
+    fn test_calculate_expensive_fuel_cost(position: HorizontalPosition, fuel_cost: FuelCost) {
+        let crabs = [(0, 1), (1, 2), (2, 3), (4, 1), (7, 1), (14, 1), (16, 1)]
+            .into_iter()
+            .collect();
+
+        assert_eq!(calculate_expensive_fuel_cost(&crabs, position), fuel_cost);
     }
 }
