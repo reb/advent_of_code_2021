@@ -112,10 +112,42 @@ const INPUT: &str = include_str!("../input/day_08");
 pub fn run() {
     let segment_displays = load_segment_displays(INPUT);
 
-    println!("Found {} lines", segment_displays.len());
+    println!(
+        "Digits 1, 4, 7 or 8 appears {} times in the output values",
+        count_occurance(&segment_displays, vec![1, 4, 7, 8])
+    );
 }
 
-fn load_segment_displays(input: &str) -> Vec<(Vec<&str>, Vec<&str>)> {
+fn count_occurance(
+    segment_displays: &Vec<(SegmentDisplays, SegmentDisplays)>,
+    digits_to_count: Vec<usize>,
+) -> usize {
+    segment_displays
+        .iter()
+        .map(|(examples, displays)| {
+            displays
+                .iter()
+                .filter_map(|display| identify_digit(&examples, display))
+                .filter(|identified_digit| digits_to_count.contains(identified_digit))
+                .count()
+        })
+        .sum()
+}
+
+type SegmentDisplay<'a> = &'a str;
+type SegmentDisplays<'a> = Vec<SegmentDisplay<'a>>;
+
+fn identify_digit<'a>(_: &SegmentDisplays<'a>, display: &SegmentDisplay<'a>) -> Option<usize> {
+    match display.len() {
+        2 => Some(1),
+        3 => Some(7),
+        4 => Some(4),
+        7 => Some(8),
+        _ => None,
+    }
+}
+
+fn load_segment_displays(input: &str) -> Vec<(SegmentDisplays, SegmentDisplays)> {
     input
         .lines()
         .filter_map(|line| {
@@ -135,6 +167,7 @@ fn load_segment_displays(input: &str) -> Vec<(Vec<&str>, Vec<&str>)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test_case::test_case;
 
     #[test]
     fn test_load_segment_displays() {
@@ -149,5 +182,31 @@ mod tests {
         )];
 
         assert_eq!(load_segment_displays(input), expected_segment_displays);
+    }
+
+    #[test_case(vec![], "ab" => Some(1) ; "digit 1")]
+    #[test_case(vec![], "eafb" => Some(4) ; "digit 4")]
+    #[test_case(vec![], "dab" => Some(7) ; "digit 7")]
+    #[test_case(vec![], "acedgfb" => Some(8) ; "digit 8")]
+    fn test_identify_digit(examples: SegmentDisplays, display: SegmentDisplay) -> Option<usize> {
+        identify_digit(&examples, &display)
+    }
+
+    #[test]
+    fn test_count_occurances() {
+        let segment_displays = vec![
+            (vec![], vec!["fdgacbe", "cefdb", "cefbgd", "gcbe"]),
+            (vec![], vec!["fcgedb", "cgb", "dgebacf", "gc"]),
+            (vec![], vec!["cg", "cg", "fdcagb", "cbg"]),
+            (vec![], vec!["efabcd", "cedba", "gadfec", "cb"]),
+            (vec![], vec!["gecf", "egdcabf", "bgf", "bfgea"]),
+            (vec![], vec!["gebdcfa", "ecba", "ca", "fadegcb"]),
+            (vec![], vec!["cefg", "dcbef", "fcge", "gbcadfe"]),
+            (vec![], vec!["ed", "bcgafe", "cdgba", "cbgef"]),
+            (vec![], vec!["gbdfcae", "bgc", "cg", "cgb"]),
+            (vec![], vec!["fgae", "cfgab", "fg", "bagce"]),
+        ];
+
+        assert_eq!(count_occurance(&segment_displays, vec![1, 4, 7, 8]), 26);
     }
 }
