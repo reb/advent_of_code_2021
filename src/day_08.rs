@@ -167,6 +167,7 @@
 /// four-digit output values. What do you get if you add up all of the output
 /// values?
 use itertools::Itertools;
+use std::collections::HashMap;
 
 const INPUT: &str = include_str!("../input/day_08");
 
@@ -198,11 +199,39 @@ fn count_occurance(
 type SegmentDisplay<'a> = &'a str;
 type SegmentDisplays<'a> = Vec<SegmentDisplay<'a>>;
 
-fn identify_digit<'a>(_: &SegmentDisplays<'a>, display: &SegmentDisplay<'a>) -> Option<usize> {
+fn identify_digit<'a>(
+    examples: &SegmentDisplays<'a>,
+    display: &SegmentDisplay<'a>,
+) -> Option<usize> {
     match display.len() {
         2 => Some(1),
         3 => Some(7),
         4 => Some(4),
+        5 => None,
+        6 => {
+            // this is either a 0, 6 or 9
+            let identified_digits: HashMap<_, _> = examples
+                .iter()
+                .map(|display| (identify_digit(&vec![], display), display))
+                .collect();
+            identified_digits.get(&Some(1)).and_then(|digit_1| {
+                if digit_1.chars().all(|section| display.contains(section)) {
+                    // if all sections of digit 1 are present, it's a 0 or 9
+                    identified_digits.get(&Some(4)).and_then(|digit_4| {
+                        if digit_4.chars().all(|section| display.contains(section)) {
+                            // if all sections of digit 4 are present, it's a 9
+                            Some(9)
+                        } else {
+                            // if not all sections of digit 4 are present, it's a 0
+                            Some(0)
+                        }
+                    })
+                } else {
+                    // if not all sections of digit 1 are present, it's a 6
+                    Some(6)
+                }
+            })
+        }
         7 => Some(8),
         _ => None,
     }
@@ -245,11 +274,23 @@ mod tests {
         assert_eq!(load_segment_displays(input), expected_segment_displays);
     }
 
-    #[test_case(vec![], "ab" => Some(1) ; "digit 1")]
-    #[test_case(vec![], "eafb" => Some(4) ; "digit 4")]
-    #[test_case(vec![], "dab" => Some(7) ; "digit 7")]
-    #[test_case(vec![], "acedgfb" => Some(8) ; "digit 8")]
-    fn test_identify_digit(examples: SegmentDisplays, display: SegmentDisplay) -> Option<usize> {
+    #[test_case("cagedb" => Some(0) ; "cagedb, 0")]
+    #[test_case("ab" => Some(1) ; "ab, 1")]
+    #[test_case("gcdfa" => Some(2) ; "gcdfa, 2")]
+    #[test_case("fbcad" => Some(3) ; "fbcad, 3")]
+    #[test_case("eafb" => Some(4) ; "eafb, 4")]
+    #[test_case("cdfbe" => Some(5) ; "cdfbe, 5")]
+    #[test_case("cdfgeb" => Some(6) ; "cdfgeb, 6")]
+    #[test_case("dab" => Some(7) ; "dab, 7")]
+    #[test_case("acedgfb" => Some(8) ; "acedgfb, 8")]
+    #[test_case("cefabd" => Some(9) ; "cefabd, 9")]
+    #[test_case("fcadb" => Some(3) ; "fcadb, 3")]
+    #[test_case("cdfeb" => Some(5) ; "cdfeb, 5")]
+    #[test_case("cdbaf" => Some(3) ; "cdbaf, 3")]
+    fn test_identify_digit(display: SegmentDisplay) -> Option<usize> {
+        let examples = vec![
+            "acedgfb", "cdfbe", "gcdfa", "fbcad", "dab", "cefabd", "cdfgeb", "eafb", "cagedb", "ab",
+        ];
         identify_digit(&examples, &display)
     }
 
