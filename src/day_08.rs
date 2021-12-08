@@ -178,6 +178,18 @@ pub fn run() {
         "Digits 1, 4, 7 or 8 appears {} times in the output values",
         count_occurance(&segment_displays, vec![1, 4, 7, 8])
     );
+
+    let total_sum = segment_displays
+        .iter()
+        .map(|(examples, displays)| {
+            displays.iter().fold(0, |number, display| {
+                let digit = identify_digit(&examples, display).expect("Could not identify a digit");
+                number * 10 + digit
+            })
+        })
+        .sum::<usize>();
+
+    println!("Adding up all the output values gives: {}", total_sum);
 }
 
 fn count_occurance(
@@ -207,33 +219,52 @@ fn identify_digit<'a>(
         2 => Some(1),
         3 => Some(7),
         4 => Some(4),
-        5 => None,
-        6 => {
-            // this is either a 0, 6 or 9
+        7 => Some(8),
+        length => {
+            // this is harder to identify
             let identified_digits: HashMap<_, _> = examples
                 .iter()
                 .map(|display| (identify_digit(&vec![], display), display))
                 .collect();
+
+            // look if digit 1 completely overlaps
             identified_digits.get(&Some(1)).and_then(|digit_1| {
-                if digit_1.chars().all(|section| display.contains(section)) {
-                    // if all sections of digit 1 are present, it's a 0 or 9
-                    identified_digits.get(&Some(4)).and_then(|digit_4| {
-                        if digit_4.chars().all(|section| display.contains(section)) {
-                            // if all sections of digit 4 are present, it's a 9
-                            Some(9)
-                        } else {
-                            // if not all sections of digit 4 are present, it's a 0
-                            Some(0)
-                        }
-                    })
-                } else {
-                    // if not all sections of digit 1 are present, it's a 6
-                    Some(6)
+                match (
+                    digit_1.chars().all(|section| display.contains(section)),
+                    length,
+                ) {
+                    (true, 5) => Some(3), // with a length 5 and overlap with digit 1 it's a 3
+                    (true, 6) => {
+                        // digit 1 overlaps and 6 sections are on, it's a 0 or 9
+                        identified_digits.get(&Some(4)).and_then(|digit_4| {
+                            if digit_4.chars().all(|section| display.contains(section)) {
+                                // if digit 4 fully overlaps, it's a 9
+                                Some(9)
+                            } else {
+                                // if digit 4 doesn't fully overlap, it's a 0
+                                Some(0)
+                            }
+                        })
+                    }
+                    (false, 5) => {
+                        // digit 1 doesn't overlaps and 5 sections are on, it's a 2 or 5
+                        identified_digits.get(&Some(4)).and_then(|digit_4| {
+                            match digit_4
+                                .chars()
+                                .filter(|&section| display.contains(section))
+                                .count()
+                            {
+                                2 => Some(2), // 2 sections of digit 4 overlap, it's a 2
+                                3 => Some(5), // 3 sections of digit 4 overlap, it's a 5
+                                _ => None,
+                            }
+                        })
+                    }
+                    (false, 6) => Some(6), // with a length 6 and no overlap of digit 1, it's a 6
+                    _ => None,
                 }
             })
         }
-        7 => Some(8),
-        _ => None,
     }
 }
 
