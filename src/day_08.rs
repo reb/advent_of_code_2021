@@ -105,10 +105,49 @@
 /// unique number of segments (highlighted above).
 ///
 /// In the output values, how many times do digits 1, 4, 7, or 8 appear?
+use itertools::Itertools;
 
 const INPUT: &str = include_str!("../input/day_08");
 
 pub fn run() {
-    println!("Not implemented yet");
-    unimplemented!();
+    let segment_displays = load_segment_displays(INPUT);
+
+    println!("Found {} lines", segment_displays.len());
+}
+
+fn load_segment_displays(input: &str) -> Vec<(Vec<&str>, Vec<&str>)> {
+    input
+        .lines()
+        .filter_map(|line| {
+            line.split('|')
+                .tuples()
+                .next()
+                .map(|(examples, display): (&str, &str)| {
+                    (
+                        examples.split_whitespace().collect(),
+                        display.split_whitespace().collect(),
+                    )
+                })
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_load_segment_displays() {
+        let input = "acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf\n";
+
+        let expected_segment_displays = vec![(
+            vec![
+                "acedgfb", "cdfbe", "gcdfa", "fbcad", "dab", "cefabd", "cdfgeb", "eafb", "cagedb",
+                "ab",
+            ],
+            vec!["cdfeb", "fcadb", "cdfeb", "cdbaf"],
+        )];
+
+        assert_eq!(load_segment_displays(input), expected_segment_displays);
+    }
 }
