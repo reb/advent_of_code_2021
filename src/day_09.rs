@@ -37,9 +37,122 @@
 ///
 /// Find all of the low points on your heightmap. What is the sum of the risk
 /// levels of all low points on your heightmap?
+use std::collections::HashMap;
+
 const INPUT: &str = include_str!("../input/day_09");
 
 pub fn run() {
-    println!("Not implemented yet");
-    unimplemented!();
+    let height_map = load_height_map(INPUT);
+
+    let (mut x, mut y) = (0, 0);
+    while let Some(_) = height_map.get(&(x, 0)) {
+        while let Some(height) = height_map.get(&(x, y)) {
+            print!("{}", height);
+            y += 1;
+        }
+        print!("\n");
+        y = 0;
+        x += 1;
+    }
+}
+
+type Coordinates = (usize, usize);
+type Height = u8;
+type HeightMap = HashMap<Coordinates, Height>;
+
+fn load_height_map(input: &str) -> HeightMap {
+    input
+        .lines()
+        .enumerate()
+        .flat_map(|(x, line)| {
+            line.chars()
+                .filter_map(|c| c.to_digit(10))
+                .enumerate()
+                .map(move |(y, height)| ((x, y), height as u8))
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn height_map_1() -> HeightMap {
+        // 2199943210
+        // 3987894921
+        // 9856789892
+        // 8767896789
+        // 9899965678
+        [
+            // 2199943210
+            ((0, 0), 2),
+            ((0, 1), 1),
+            ((0, 2), 9),
+            ((0, 3), 9),
+            ((0, 4), 9),
+            ((0, 5), 4),
+            ((0, 6), 3),
+            ((0, 7), 2),
+            ((0, 8), 1),
+            ((0, 9), 0),
+            // 3987894921
+            ((1, 0), 3),
+            ((1, 1), 9),
+            ((1, 2), 8),
+            ((1, 3), 7),
+            ((1, 4), 8),
+            ((1, 5), 9),
+            ((1, 6), 4),
+            ((1, 7), 9),
+            ((1, 8), 2),
+            ((1, 9), 1),
+            // 9856789892
+            ((2, 0), 9),
+            ((2, 1), 8),
+            ((2, 2), 5),
+            ((2, 3), 6),
+            ((2, 4), 7),
+            ((2, 5), 8),
+            ((2, 6), 9),
+            ((2, 7), 8),
+            ((2, 8), 9),
+            ((2, 9), 2),
+            // 8767896789
+            ((3, 0), 8),
+            ((3, 1), 7),
+            ((3, 2), 6),
+            ((3, 3), 7),
+            ((3, 4), 8),
+            ((3, 5), 9),
+            ((3, 6), 6),
+            ((3, 7), 7),
+            ((3, 8), 8),
+            ((3, 9), 9),
+            // 9899965678
+            ((4, 0), 9),
+            ((4, 1), 8),
+            ((4, 2), 9),
+            ((4, 3), 9),
+            ((4, 4), 9),
+            ((4, 5), 6),
+            ((4, 6), 5),
+            ((4, 7), 6),
+            ((4, 8), 7),
+            ((4, 9), 8),
+        ]
+        .into_iter()
+        .collect()
+    }
+
+    #[test]
+    fn test_load_height_map() {
+        let input = "\
+            2199943210\n\
+            3987894921\n\
+            9856789892\n\
+            8767896789\n\
+            9899965678\n";
+
+        assert_eq!(load_height_map(input), height_map_1());
+    }
 }
