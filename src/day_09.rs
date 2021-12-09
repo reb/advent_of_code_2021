@@ -56,9 +56,46 @@ pub fn run() {
     }
 }
 
-type Coordinates = (usize, usize);
+type Coordinates = (i32, i32);
 type Height = u8;
 type HeightMap = HashMap<Coordinates, Height>;
+
+trait HeightMapNeighbours<'a> {
+    fn neighbours(&'a self, position: Coordinates) -> HeightMapNeighboursIter<'a>;
+}
+
+impl<'a> HeightMapNeighbours<'a> for HeightMap {
+    fn neighbours(&self, position: Coordinates) -> HeightMapNeighboursIter {
+        HeightMapNeighboursIter::new(self, position)
+    }
+}
+
+struct HeightMapNeighboursIter<'a> {
+    height_map: &'a HeightMap,
+    iterator: Box<dyn Iterator<Item = Coordinates>>,
+}
+impl<'a> HeightMapNeighboursIter<'a> {
+    fn new(height_map: &'a HeightMap, (x, y): Coordinates) -> HeightMapNeighboursIter<'a> {
+        HeightMapNeighboursIter {
+            height_map,
+            iterator: { Box::new([(x - 1, y), (x, y + 1), (x + 1, y), (x, y - 1)].into_iter()) },
+        }
+    }
+}
+
+impl<'a> Iterator for HeightMapNeighboursIter<'a> {
+    type Item = &'a Height;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(position) = self.iterator.next() {
+            let neighbour = self.height_map.get(&position);
+            if neighbour.is_some() {
+                return neighbour;
+            }
+        }
+        None
+    }
+}
 
 fn load_height_map(input: &str) -> HeightMap {
     input
@@ -68,7 +105,7 @@ fn load_height_map(input: &str) -> HeightMap {
             line.chars()
                 .filter_map(|c| c.to_digit(10))
                 .enumerate()
-                .map(move |(y, height)| ((x, y), height as u8))
+                .map(move |(y, height)| ((x as i32, y as i32), height as u8))
         })
         .collect()
 }
@@ -154,5 +191,29 @@ mod tests {
             9899965678\n";
 
         assert_eq!(load_height_map(input), height_map_1());
+    }
+
+    #[test]
+    fn test_height_map_neighbours_iter() {
+        let height_map = height_map_1();
+
+        let mut neighbours = height_map.neighbours((1, 1));
+
+        assert_eq!(neighbours.next(), Some(&1));
+        assert_eq!(neighbours.next(), Some(&8));
+        assert_eq!(neighbours.next(), Some(&8));
+        assert_eq!(neighbours.next(), Some(&3));
+        assert_eq!(neighbours.next(), None);
+    }
+
+    #[test]
+    fn test_height_map_neighbours_iter_corner() {
+        let height_map = height_map_1();
+
+        let mut neighbours = height_map.neighbours((4, 0));
+
+        assert_eq!(neighbours.next(), Some(&8));
+        assert_eq!(neighbours.next(), Some(&8));
+        assert_eq!(neighbours.next(), None);
     }
 }
