@@ -44,16 +44,28 @@ const INPUT: &str = include_str!("../input/day_09");
 pub fn run() {
     let height_map = load_height_map(INPUT);
 
-    let (mut x, mut y) = (0, 0);
-    while let Some(_) = height_map.get(&(x, 0)) {
-        while let Some(height) = height_map.get(&(x, y)) {
-            print!("{}", height);
-            y += 1;
-        }
-        print!("\n");
-        y = 0;
-        x += 1;
-    }
+    let lowest_points = find_lowest_points(&height_map);
+    let total_risk_level = lowest_points
+        .iter()
+        .map(|(_, p)| (p + 1) as u32)
+        .sum::<u32>();
+
+    println!(
+        "The sum of the risk levels of all low points is: {}",
+        total_risk_level
+    );
+}
+
+fn find_lowest_points(height_map: &HeightMap) -> Vec<(Coordinates, Height)> {
+    height_map
+        .iter()
+        .filter(|(&position, height)| {
+            height_map
+                .neighbours(position)
+                .all(|neighbour_height| *height < neighbour_height)
+        })
+        .map(|(position, height)| (*position, *height))
+        .collect()
 }
 
 type Coordinates = (i32, i32);
@@ -215,5 +227,18 @@ mod tests {
         assert_eq!(neighbours.next(), Some(&8));
         assert_eq!(neighbours.next(), Some(&8));
         assert_eq!(neighbours.next(), None);
+    }
+
+    #[test]
+    fn test_find_lowest_points() {
+        let height_map = height_map_1();
+
+        let found_lowest_points = lowest_points(&height_map);
+
+        assert_eq!(found_lowest_points.len(), 4);
+        assert!(found_lowest_points.contains(&((0, 1), 1)));
+        assert!(found_lowest_points.contains(&((0, 9), 0)));
+        assert!(found_lowest_points.contains(&((2, 2), 5)));
+        assert!(found_lowest_points.contains(&((4, 6), 5)));
     }
 }
