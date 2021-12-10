@@ -152,6 +152,12 @@ pub fn run() {
         "The total syntax error score for the first illegal character errors is: {}",
         total_syntax_error_score
     );
+
+    let autocomplete_middle_score = calculate_middle_score(&autocompletions);
+    println!(
+        "The middle score for the autocompletions is: {}",
+        autocomplete_middle_score
+    );
 }
 
 fn calculate_error_score(autocompletions: &Vec<Result<String, char>>) -> u32 {
@@ -170,6 +176,29 @@ fn line_error_score(error: &char) -> u32 {
         '>' => 25137,
         _ => 0,
     }
+}
+
+fn calculate_middle_score(autocompletions: &Vec<Result<String, char>>) -> u64 {
+    let mut scores = autocompletions
+        .iter()
+        .filter_map(|r| r.as_ref().ok())
+        .map(autocompletion_score)
+        .collect::<Vec<_>>();
+    scores.sort();
+    *scores.get(scores.len() / 2).unwrap()
+}
+
+fn autocompletion_score(autocompletion: &String) -> u64 {
+    autocompletion.chars().fold(0, |total, closer| {
+        total * 5
+            + match closer {
+                ')' => 1,
+                ']' => 2,
+                '}' => 3,
+                '>' => 4,
+                _ => 0,
+            }
+    })
 }
 
 fn autocomplete_line(line: &str) -> Result<String, char> {
@@ -207,6 +236,21 @@ mod tests {
     use super::*;
     use test_case::test_case;
 
+    fn autocompletions() -> Vec<Result<String, char>> {
+        vec![
+            Ok("}}]])})]".to_string()),
+            Ok(")}>]})".to_string()),
+            Err('}'),
+            Ok("}}>}>))))".to_string()),
+            Err(')'),
+            Err(']'),
+            Ok("]]}}]}]}>".to_string()),
+            Err(')'),
+            Err('>'),
+            Ok("])}>".to_string()),
+        ]
+    }
+
     #[test_case("[({(<(())[]>[[{[]{<()<>>" => Ok("}}]])})]".to_string())  ; "1")]
     #[test_case("[(()[<>])]({[<{<<[]>>("   => Ok(")}>]})".to_string())    ; "2")]
     #[test_case("{([(<{}[<>[]}>{[]{[(<()>" => Err('}')                    ; "3")]
@@ -223,18 +267,20 @@ mod tests {
 
     #[test]
     fn test_calculate_error_score() {
-        let autocompletions = vec![
-            Ok("}}]])})]".to_string()),
-            Ok(")}>]})".to_string()),
-            Err('}'),
-            Ok("}}>}>))))".to_string()),
-            Err(')'),
-            Err(']'),
-            Ok("]]}}]}]}>".to_string()),
-            Err(')'),
-            Err('>'),
-            Ok("])}>".to_string()),
-        ];
-        assert_eq!(calculate_error_score(&autocompletions), 26397);
+        assert_eq!(calculate_error_score(&autocompletions()), 26397);
+    }
+
+    #[test_case(&"}}]])})]".to_string()  => 288957  ; "1")]
+    #[test_case(&")}>]})".to_string()    => 5566    ; "2")]
+    #[test_case(&"}}>}>))))".to_string() => 1480781 ; "3")]
+    #[test_case(&"]]}}]}]}>".to_string() => 995444  ; "4")]
+    #[test_case(&"])}>".to_string()      => 294     ; "5")]
+    fn test_line_autocompletion_score(autocompletion: &String) -> u32 {
+        autocompletion_score(autocompletion)
+    }
+
+    #[test]
+    fn test_calculate_middle_score() {
+        assert_eq!(calculate_middle_score(&autocompletions()), 288957);
     }
 }
