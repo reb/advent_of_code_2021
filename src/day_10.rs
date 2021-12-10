@@ -142,22 +142,27 @@ const INPUT: &str = include_str!("../input/day_10");
 pub fn run() {
     let navigation_subsystem = INPUT;
 
-    let total_syntax_error_score = calculate_error_score(navigation_subsystem);
+    let autocompletions = navigation_subsystem
+        .lines()
+        .map(autocomplete_line)
+        .collect();
+
+    let total_syntax_error_score = calculate_error_score(&autocompletions);
     println!(
         "The total syntax error score for the first illegal character errors is: {}",
         total_syntax_error_score
     );
 }
 
-fn calculate_error_score(navigation_subsystem: &str) -> u32 {
-    navigation_subsystem
-        .lines()
-        .filter_map(first_illegal_character)
+fn calculate_error_score(autocompletions: &Vec<Result<String, char>>) -> u32 {
+    autocompletions
+        .iter()
+        .filter_map(|r| r.as_ref().err())
         .map(line_error_score)
         .sum()
 }
 
-fn line_error_score(error: char) -> u32 {
+fn line_error_score(error: &char) -> u32 {
     match error {
         ')' => 3,
         ']' => 57,
@@ -167,9 +172,12 @@ fn line_error_score(error: char) -> u32 {
     }
 }
 
-fn first_illegal_character(line: &str) -> Option<char> {
+fn autocomplete_line(line: &str) -> Result<String, char> {
     lazy_static! {
         static ref OPENERS: HashMap<char, char> = [(')', '('), (']', '['), ('}', '{'), ('>', '<')]
+            .into_iter()
+            .collect();
+        static ref CLOSERS: HashMap<char, char> = [('(', ')'), ('[', ']'), ('{', '}'), ('<', '>')]
             .into_iter()
             .collect();
     }
@@ -180,12 +188,18 @@ fn first_illegal_character(line: &str) -> Option<char> {
             '(' | '[' | '{' | '<' => stack.push(c),
             closer => {
                 if OPENERS.get(&closer).map(|opener| *opener) != stack.pop() {
-                    return Some(closer);
+                    return Err(closer);
                 }
             }
         }
     }
-    None
+
+    // autocomplete the line using the remaining stack
+    Ok(stack
+        .iter()
+        .filter_map(|opener| CLOSERS.get(opener))
+        .rev()
+        .collect())
 }
 
 #[cfg(test)]
@@ -193,34 +207,34 @@ mod tests {
     use super::*;
     use test_case::test_case;
 
-    #[test_case("[({(<(())[]>[[{[]{<()<>>" => None      ; "1")]
-    #[test_case("[(()[<>])]({[<{<<[]>>("   => None      ; "2")]
-    #[test_case("{([(<{}[<>[]}>{[]{[(<()>" => Some('}') ; "3")]
-    #[test_case("(((({<>}<{<{<>}{[]{[]{}"  => None      ; "4")]
-    #[test_case("[[<[([]))<([[{}[[()]]]"   => Some(')') ; "5")]
-    #[test_case("[{[{({}]{}}([{[{{{}}([]"  => Some(']') ; "6")]
-    #[test_case("{<[[]]>}<{[{[{[]{()[[[]"  => None      ; "7")]
-    #[test_case("[<(<(<(<{}))><([]([]()"   => Some(')') ; "8")]
-    #[test_case("<{([([[(<>()){}]>(<<{{"   => Some('>') ; "9")]
-    #[test_case("<{([{{}}[<[[[<>{}]]]>[]]" => None      ; "10")]
-    fn test(line: &str) -> Option<char> {
-        first_illegal_character(line)
+    #[test_case("[({(<(())[]>[[{[]{<()<>>" => Ok("}}]])})]".to_string())  ; "1")]
+    #[test_case("[(()[<>])]({[<{<<[]>>("   => Ok(")}>]})".to_string())    ; "2")]
+    #[test_case("{([(<{}[<>[]}>{[]{[(<()>" => Err('}')                    ; "3")]
+    #[test_case("(((({<>}<{<{<>}{[]{[]{}"  => Ok("}}>}>))))".to_string()) ; "4")]
+    #[test_case("[[<[([]))<([[{}[[()]]]"   => Err(')')                    ; "5")]
+    #[test_case("[{[{({}]{}}([{[{{{}}([]"  => Err(']')                    ; "6")]
+    #[test_case("{<[[]]>}<{[{[{[]{()[[[]"  => Ok("]]}}]}]}>".to_string()) ; "7")]
+    #[test_case("[<(<(<(<{}))><([]([]()"   => Err(')')                    ; "8")]
+    #[test_case("<{([([[(<>()){}]>(<<{{"   => Err('>')                    ; "9")]
+    #[test_case("<{([{{}}[<[[[<>{}]]]>[]]" => Ok("])}>".to_string())      ; "10")]
+    fn test_autocomplete_line(line: &str) -> Result<String, char> {
+        autocomplete_line(line)
     }
 
     #[test]
-    fn test_calcu() {
-        let navigation_subsystem = "\
-            [({(<(())[]>[[{[]{<()<>>\n\
-            [(()[<>])]({[<{<<[]>>(\n\
-            {([(<{}[<>[]}>{[]{[(<()>\n\
-            (((({<>}<{<{<>}{[]{[]{}\n\
-            [[<[([]))<([[{}[[()]]]\n\
-            [{[{({}]{}}([{[{{{}}([]\n\
-            {<[[]]>}<{[{[{[]{()[[[]\n\
-            [<(<(<(<{}))><([]([]()\n\
-            <{([([[(<>()){}]>(<<{{\n\
-            <{([{{}}[<[[[<>{}]]]>[]]\n";
-
-        assert_eq!(calculate_error_score(navigation_subsystem), 26397);
+    fn test_calculate_error_score() {
+        let autocompletions = vec![
+            Ok("}}]])})]".to_string()),
+            Ok(")}>]})".to_string()),
+            Err('}'),
+            Ok("}}>}>))))".to_string()),
+            Err(')'),
+            Err(']'),
+            Ok("]]}}]}]}>".to_string()),
+            Err(')'),
+            Err('>'),
+            Ok("])}>".to_string()),
+        ];
+        assert_eq!(calculate_error_score(&autocompletions), 26397);
     }
 }
