@@ -75,10 +75,92 @@
 ///
 /// Find the first illegal character in each corrupted line of the navigation
 /// subsystem. What is the total syntax error score for those errors?
+use std::collections::HashMap;
 
 const INPUT: &str = include_str!("../input/day_10");
 
 pub fn run() {
-    println!("Not implemented yet");
-    unimplemented!();
+    let navigation_subsystem = INPUT;
+
+    let total_syntax_error_score = calculate_error_score(navigation_subsystem);
+    println!(
+        "The total syntax error score for the first illegal character errors is: {}",
+        total_syntax_error_score
+    );
+}
+
+fn calculate_error_score(navigation_subsystem: &str) -> u32 {
+    navigation_subsystem
+        .lines()
+        .filter_map(first_illegal_character)
+        .map(line_error_score)
+        .sum()
+}
+
+fn line_error_score(error: char) -> u32 {
+    match error {
+        ')' => 3,
+        ']' => 57,
+        '}' => 1197,
+        '>' => 25137,
+        _ => 0,
+    }
+}
+
+fn first_illegal_character(line: &str) -> Option<char> {
+    lazy_static! {
+        static ref OPENERS: HashMap<char, char> = [(')', '('), (']', '['), ('}', '{'), ('>', '<')]
+            .into_iter()
+            .collect();
+    }
+
+    let mut stack = Vec::new();
+    for c in line.chars() {
+        match c {
+            '(' | '[' | '{' | '<' => stack.push(c),
+            closer => {
+                if OPENERS.get(&closer).map(|opener| *opener) != stack.pop() {
+                    return Some(closer);
+                }
+            }
+        }
+    }
+    None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
+
+    #[test_case("[({(<(())[]>[[{[]{<()<>>" => None      ; "1")]
+    #[test_case("[(()[<>])]({[<{<<[]>>("   => None      ; "2")]
+    #[test_case("{([(<{}[<>[]}>{[]{[(<()>" => Some('}') ; "3")]
+    #[test_case("(((({<>}<{<{<>}{[]{[]{}"  => None      ; "4")]
+    #[test_case("[[<[([]))<([[{}[[()]]]"   => Some(')') ; "5")]
+    #[test_case("[{[{({}]{}}([{[{{{}}([]"  => Some(']') ; "6")]
+    #[test_case("{<[[]]>}<{[{[{[]{()[[[]"  => None      ; "7")]
+    #[test_case("[<(<(<(<{}))><([]([]()"   => Some(')') ; "8")]
+    #[test_case("<{([([[(<>()){}]>(<<{{"   => Some('>') ; "9")]
+    #[test_case("<{([{{}}[<[[[<>{}]]]>[]]" => None      ; "10")]
+    fn test(line: &str) -> Option<char> {
+        first_illegal_character(line)
+    }
+
+    #[test]
+    fn test_calcu() {
+        let navigation_subsystem = "\
+            [({(<(())[]>[[{[]{<()<>>\n\
+            [(()[<>])]({[<{<<[]>>(\n\
+            {([(<{}[<>[]}>{[]{[(<()>\n\
+            (((({<>}<{<{<>}{[]{[]{}\n\
+            [[<[([]))<([[{}[[()]]]\n\
+            [{[{({}]{}}([{[{{{}}([]\n\
+            {<[[]]>}<{[{[{[]{()[[[]\n\
+            [<(<(<(<{}))><([]([]()\n\
+            <{([([[(<>()){}]>(<<{{\n\
+            <{([{{}}[<[[[<>{}]]]>[]]\n";
+
+        assert_eq!(calculate_error_score(navigation_subsystem), 26397);
+    }
 }
