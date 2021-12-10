@@ -88,7 +88,7 @@
 ///
 /// What do you get if you multiply together the sizes of the three largest
 /// basins?
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 const INPUT: &str = include_str!("../input/day_09");
 
@@ -105,15 +105,61 @@ pub fn run() {
         "The sum of the risk levels of all low points is: {}",
         total_risk_level
     );
+
+    let basin_sizes = find_basin_sizes(&lowest_points, &height_map);
+
+    let largest_basins_multiplied = basin_sizes.iter().take(3).product::<usize>();
+    println!(
+        "The three largest basin sizes multiplied together gives: {}",
+        largest_basins_multiplied
+    );
 }
 
-fn find_lowest_points(height_map: &HeightMap) -> Vec<(Coordinates, Height)> {
+fn find_basin_sizes(lowest_points: &HeightSet, height_map: &HeightMap) -> Vec<usize> {
+    let mut basin_sizes = lowest_points
+        .iter()
+        .map(|lowest_point| {
+            let mut basin = HeightSet::new();
+            basin.insert(*lowest_point);
+            basin = expand_basin(basin, height_map);
+            basin.len()
+        })
+        .collect::<Vec<_>>();
+
+    // sort in descending order
+    basin_sizes.sort();
+    basin_sizes.reverse();
+
+    basin_sizes
+}
+
+fn expand_basin(mut basin: HeightSet, height_map: &HeightMap) -> HeightSet {
+    let new_positions = basin
+        .iter()
+        .flat_map(|(position, height)| {
+            height_map
+                .neighbours(*position)
+                .filter(|(_, neighbour_height)| neighbour_height > height && neighbour_height != &9)
+        })
+        .collect();
+
+    // no more expansion, return
+    if basin.is_superset(&new_positions) {
+        return basin;
+    }
+
+    // go deeper
+    basin.extend(&expand_basin(new_positions, height_map));
+    basin
+}
+
+fn find_lowest_points(height_map: &HeightMap) -> HeightSet {
     height_map
         .iter()
-        .filter(|(&position, height)| {
+        .filter(|(&position, &height)| {
             height_map
                 .neighbours(position)
-                .all(|neighbour_height| *height < neighbour_height)
+                .all(|(_, neighbour_height)| height < neighbour_height)
         })
         .map(|(position, height)| (*position, *height))
         .collect()
@@ -122,6 +168,7 @@ fn find_lowest_points(height_map: &HeightMap) -> Vec<(Coordinates, Height)> {
 type Coordinates = (i32, i32);
 type Height = u8;
 type HeightMap = HashMap<Coordinates, Height>;
+type HeightSet = HashSet<(Coordinates, Height)>;
 
 trait HeightMapNeighbours<'a> {
     fn neighbours(&'a self, position: Coordinates) -> HeightMapNeighboursIter<'a>;
@@ -147,13 +194,13 @@ impl<'a> HeightMapNeighboursIter<'a> {
 }
 
 impl<'a> Iterator for HeightMapNeighboursIter<'a> {
-    type Item = &'a Height;
+    type Item = (Coordinates, Height);
 
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(position) = self.iterator.next() {
             let neighbour = self.height_map.get(&position);
             if neighbour.is_some() {
-                return neighbour;
+                return neighbour.map(|height| (position, *height));
             }
         }
         None
@@ -262,10 +309,10 @@ mod tests {
 
         let mut neighbours = height_map.neighbours((1, 1));
 
-        assert_eq!(neighbours.next(), Some(&1));
-        assert_eq!(neighbours.next(), Some(&8));
-        assert_eq!(neighbours.next(), Some(&8));
-        assert_eq!(neighbours.next(), Some(&3));
+        assert_eq!(neighbours.next(), Some(((0, 1), 1)));
+        assert_eq!(neighbours.next(), Some(((1, 2), 8)));
+        assert_eq!(neighbours.next(), Some(((2, 1), 8)));
+        assert_eq!(neighbours.next(), Some(((1, 0), 3)));
         assert_eq!(neighbours.next(), None);
     }
 
@@ -275,8 +322,8 @@ mod tests {
 
         let mut neighbours = height_map.neighbours((4, 0));
 
-        assert_eq!(neighbours.next(), Some(&8));
-        assert_eq!(neighbours.next(), Some(&8));
+        assert_eq!(neighbours.next(), Some(((3, 0), 8)));
+        assert_eq!(neighbours.next(), Some(((4, 1), 8)));
         assert_eq!(neighbours.next(), None);
     }
 
@@ -284,12 +331,25 @@ mod tests {
     fn test_find_lowest_points() {
         let height_map = height_map_1();
 
-        let found_lowest_points = lowest_points(&height_map);
+        let expected_lowest_points = [((0, 1), 1), ((0, 9), 0), ((2, 2), 5), ((4, 6), 5)]
+            .into_iter()
+            .collect();
 
-        assert_eq!(found_lowest_points.len(), 4);
-        assert!(found_lowest_points.contains(&((0, 1), 1)));
-        assert!(found_lowest_points.contains(&((0, 9), 0)));
-        assert!(found_lowest_points.contains(&((2, 2), 5)));
-        assert!(found_lowest_points.contains(&((4, 6), 5)));
+        assert_eq!(find_lowest_points(&height_map), expected_lowest_points);
+    }
+
+    #[test]
+    fn test_find_basin_sizes() {
+        let height_map = height_map_1();
+        let lowest_points = [((0, 1), 1), ((0, 9), 0), ((2, 2), 5), ((4, 6), 5)]
+            .into_iter()
+            .collect();
+
+        let expected_basin_sizes = vec![14, 9, 9, 3];
+
+        assert_eq!(
+            find_basin_sizes(&lowest_points, &height_map),
+            expected_basin_sizes
+        );
     }
 }
